@@ -1,0 +1,16 @@
+Black:
+Pawn      ♟
+Knight    ♞
+Bishop    ♝
+Rook      ♜
+King      ♚
+Queen     ♛
+
+
+White:
+Pawn      ♙
+Knight    ♘
+Bishop    ♗
+Rook      ♖
+King      ♔
+Queen     ♕
