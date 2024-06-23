@@ -224,11 +224,12 @@ class Board {
     default:
       break;
     }
-    Board tempBoard = *this;
+    // This bit caused a recursion error, still not quite sure why haha
+    /*Board tempBoard = *this;
     tempBoard.movePiece(fromRow, fromCol, toRow, toCol, currentTurn);
     if (tempBoard.isKingInCheck(currentTurn)) {
         return false;
-    }
+    }*/
 
     return false;
   }
