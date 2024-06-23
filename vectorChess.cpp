@@ -4,7 +4,7 @@ Author: github.com/d3vboi
 Start Date: 22/06/2024
 Description:
     A c++ chess game, written for the hack club arcade.
-Version: 0.2
+Version: 0.2.1
 */
 
 #include <iostream>
@@ -89,8 +89,8 @@ class Board {
     return board[row][col];
   }
 
-  bool movePiece(int fromRow, int fromCol, int toRow, int toCol) {
-    if (isValidMove(fromRow, fromCol, toRow, toCol)) {
+  bool movePiece(int fromRow, int fromCol, int toRow, int toCol, PieceColor currentTurn) {
+    if (isValidMove(fromRow, fromCol, toRow, toCol, currentTurn)) {
       board[toRow][toCol] = board[fromRow][fromCol];
       board[fromRow][fromCol] = Piece();
       return true;
@@ -98,14 +98,14 @@ class Board {
     return false;
   }
 
-  bool isValidMove(int fromRow, int fromCol, int toRow, int toCol) const {
+  bool isValidMove(int fromRow, int fromCol, int toRow, int toCol, PieceColor currentTurn) const {
     if (toRow < 0 || toRow >= 8 || toCol < 0 || toCol >= 8) {
       return false;
     }
 
     Piece piece = board[fromRow][fromCol];
 
-    if (piece.getType() == PieceType::EMPTY) {
+    if (piece.getType() == PieceType::EMPTY || piece.getColor() != currentTurn) {
       return false;
     }
 
@@ -114,7 +114,8 @@ class Board {
     if (piece.getColor() == destPiece.getColor()) {
       return false;
     }
-    // Movement rules based on piece type
+
+    // Movement rules
     switch (piece.getType()) {
     case PieceType::PAWN:
       if (piece.getColor() == PieceColor::WHITE) {
@@ -223,9 +224,70 @@ class Board {
     default:
       break;
     }
+    Board tempBoard = *this;
+    tempBoard.movePiece(fromRow, fromCol, toRow, toCol, currentTurn);
+    if (tempBoard.isKingInCheck(currentTurn)) {
+        return false;
+    }
 
     return false;
   }
+
+  void findKing(PieceColor color, int& kingRow, int& kingCol) const {
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            Piece piece = board[row][col];
+            if (piece.getType() == PieceType::KING && piece.getColor() == color) {
+                kingRow = row;
+                kingCol = col;
+                return;
+            }
+        }
+    }
+    }
+
+bool isKingInCheck(PieceColor color) const {
+    int kingRow, kingCol;
+    findKing(color, kingRow, kingCol);
+
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            Piece piece = board[row][col];
+            if (piece.getColor() != color && piece.getType() != PieceType::EMPTY) {
+                if (isValidMove(row, col, kingRow, kingCol, piece.getColor())) {
+                    return true;
+                }
+            }
+        }
+    }
+
+    return false; // Not in check
+}
+
+bool isCheckmate(PieceColor color) const {
+    if (!isKingInCheck(color)) {
+        return false; // Can't really be in checkmate if not in check
+    }
+
+    for (int row = 0; row < 8; ++row) {
+        for (int col = 0; col < 8; ++col) {
+            Piece piece = board[row][col];
+            if (piece.getColor() == color) {
+                for (int toRow = 0; toRow < 8; ++toRow) {
+                    for (int toCol = 0; toCol < 8; ++toCol) {
+                        if (isValidMove(row, col, toRow, toCol, color)) {
+                            return false; // Valid moves, not checkmate
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return true; // No valid moves, means it's a checkmate
+}
+
+
 
   private: std::vector < std::vector < Piece >> board {
     8,
@@ -239,6 +301,7 @@ class ChessGame {
   }
 
   void play() {
+    std::cout << "\033[2J\033[1;1H";
     printBoard();
     std::string move;
     while (true) {
@@ -248,10 +311,20 @@ class ChessGame {
 
       int fromRow, fromCol, toRow, toCol;
       if (parseMove(move, fromRow, fromCol, toRow, toCol)) {
-        if (board.movePiece(fromRow, fromCol, toRow, toCol)) {
-          printBoard();
+        if (board.movePiece(fromRow, fromCol, toRow, toCol, currentTurn)) {
+            std::cout << "\033[2J\033[1;1H";
+            printBoard();
+
+            if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
+                break;
+            } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                std::cout << (currentTurn == PieceColor::WHITE ? "Black" : "White") << " is in check." << std::endl;
+            }
+
+            switchTurn();
         } else {
-          std::cout << "Invalid move. Try again." << std::endl;
+            std::cout << "Invalid move. Try again." << std::endl;
         }
       } else {
         std::cout << "Invalid input. Try again." << std::endl;
@@ -260,6 +333,7 @@ class ChessGame {
   }
 
   private: Board board;
+  PieceColor currentTurn = PieceColor::WHITE;
 
   void printBoard() const {
     for (int row = 7; row >= 0; --row) {
@@ -306,11 +380,22 @@ class ChessGame {
     return (fromCol >= 0 && fromCol < 8 && fromRow >= 0 && fromRow < 8 &&
       toCol >= 0 && toCol < 8 && toRow >= 0 && toRow < 8);
   }
+
+  void switchTurn() {
+    currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
+    std::cout << (currentTurn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
+  }
 };
 
 int main() {
-  ChessGame game;
-  game.play();
+    try {
+        ChessGame game;
+        game.play();
+    } catch (const std::exception &e) {
+        std::cerr << "Exception: " << e.what() << std::endl;
+    } catch (...) {
+        std::cerr << "Unknown error occurred" << std::endl;
+    }
 
-  return 0;
+    return 0;
 }
