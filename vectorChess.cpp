@@ -337,46 +337,59 @@ class ChessGame {
   PieceColor currentTurn = PieceColor::WHITE;
 
   void printBoard() const {
+    std::string prefix = "\e[";
+    std::string suffix = "m";
     std::string cReset = "\e[0m";
-    std::string bgWhite = "\e[0;107";
-    std::string bgBlack = "\e[0;100";
+    std::string bgWhite = "0;107";
+    std::string bgBlack = "0;100";
+    std::string bgGreen = "0;102";
+    std::string bgBlue = "0;104";
+    std::string bgRed = "0;101";
+    std::string fgWhite = ";1;97";
+    std::string fgBlack = ";1;90";
+    std::string fgGreen = ";1;92";
+    std::string fgBlue = ";1;94";
+    std::string fgRed = ";1;91";
+
+
     int colorIte = 0;
     std::string tempOut;
 
     for (int row = 7; row >= 0; --row) {
-      std::cout << row + 1 << " ";
+      std::cout << prefix+bgBlue+fgBlack+suffix << " " << row + 1 << " " << cReset;
       for (int col = 0; col < 8; ++col) {
         Piece piece = board.getPiece(row, col);
         switch (piece.getType()) {
         case PieceType::PAWN:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? "P " : "p ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? " P " : " p ");
           break;
         case PieceType::KNIGHT:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? "N " : "n ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? " N " : " n ");
           break;
         case PieceType::BISHOP:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? "B " : "b ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? " B " : " b ");
           break;
         case PieceType::ROOK:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? "R " : "r ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? " R " : " r ");
           break;
         case PieceType::QUEEN:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? "Q " : "q ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? " Q " : " q ");
           break;
         case PieceType::KING:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? "K " : "k ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? " K " : " k ");
           break;
         default:
-          tempOut = ". ";
+          tempOut = " . ";
           break;
         };
-        //std::cout << ((colorIte % 2 == 0) ? bgWhite : bgBlack) << tempOut << cReset;
-        std::cout << tempOut;
+
+        std::cout << prefix << ((colorIte % 2 == 0) ? bgWhite+fgBlack : bgBlack+fgWhite) << suffix << tempOut << cReset;
         colorIte++;
       }
       std::cout << std::endl;
+      colorIte++;
     }
-    std::cout << "  a b c d e f g h" << std::endl;
+    std::cout << prefix+bgBlue+fgBlack+suffix << "    a  b  c  d  e  f  g  h " << cReset << std::endl;
   }
 
   bool parseMove(const std::string & move, int & fromRow, int & fromCol, int & toRow, int & toCol) const {
