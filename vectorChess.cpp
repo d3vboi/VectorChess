@@ -337,33 +337,42 @@ class ChessGame {
   PieceColor currentTurn = PieceColor::WHITE;
 
   void printBoard() const {
+    std::string cReset = "\e[0m";
+    std::string bgWhite = "\e[0;107";
+    std::string bgBlack = "\e[0;100";
+    int colorIte = 0;
+    std::string tempOut;
+
     for (int row = 7; row >= 0; --row) {
       std::cout << row + 1 << " ";
       for (int col = 0; col < 8; ++col) {
         Piece piece = board.getPiece(row, col);
         switch (piece.getType()) {
         case PieceType::PAWN:
-          std::cout << (piece.getColor() == PieceColor::WHITE ? "P " : "p ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? "P " : "p ");
           break;
         case PieceType::KNIGHT:
-          std::cout << (piece.getColor() == PieceColor::WHITE ? "N " : "n ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? "N " : "n ");
           break;
         case PieceType::BISHOP:
-          std::cout << (piece.getColor() == PieceColor::WHITE ? "B " : "b ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? "B " : "b ");
           break;
         case PieceType::ROOK:
-          std::cout << (piece.getColor() == PieceColor::WHITE ? "R " : "r ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? "R " : "r ");
           break;
         case PieceType::QUEEN:
-          std::cout << (piece.getColor() == PieceColor::WHITE ? "Q " : "q ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? "Q " : "q ");
           break;
         case PieceType::KING:
-          std::cout << (piece.getColor() == PieceColor::WHITE ? "K " : "k ");
+          tempOut = (piece.getColor() == PieceColor::WHITE ? "K " : "k ");
           break;
         default:
-          std::cout << ". ";
+          tempOut = ". ";
           break;
-        }
+        };
+        //std::cout << ((colorIte % 2 == 0) ? bgWhite : bgBlack) << tempOut << cReset;
+        std::cout << tempOut;
+        colorIte++;
       }
       std::cout << std::endl;
     }
