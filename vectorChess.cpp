@@ -237,6 +237,18 @@ class Board {
     return false;
   }
 
+  std::string* findValidMoves(Piece piece, PieceColor color, int row, int col) {
+    std::string* moves = new std::string();
+    for (int toRow = 0; toRow < 8; ++toRow) {
+      for (int toCol = 0; toCol < 8; ++toCol) {
+        if (isValidMove(row, col, toRow, toCol, color)){
+          moves->push_back(toRow + 1 + (toCol + 1) * 10);
+        }
+      }
+    }
+    return moves;
+  }
+
   void findKing(PieceColor color, int & kingRow, int & kingCol) const {
     for (int row = 0; row < 8; ++row) {
       for (int col = 0; col < 8; ++col) {
@@ -333,6 +345,7 @@ class ChessGame {
 
     int colorIte = 0;
     std::string tempOut;
+    //std::string* validMoves = board.findValidMoves();
 
     for (int row = 7; row >= 0; --row) {
       std::cout << prefix + bgBlue + fgBlack + suffix << " " << row + 1 << " " << cReset;
@@ -382,6 +395,7 @@ class ChessGame {
     std::cout << "sRow: " << selectedRow << std::endl;
     std::cout << "sCol: " << selectedCol << std::endl;
     std::cout << "Selected: " << selected << std::endl;
+    
   }
 
   bool parseMove(const std::string & move, int & fromRow, int & fromCol, int & toRow, int & toCol) const {
