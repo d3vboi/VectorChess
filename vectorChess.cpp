@@ -305,9 +305,106 @@ class ChessGame {
   void play(bool algebraicMode) {
     std::cout << "\033[2J\033[1;1H";
     printBoard();
-    std::string move;
     if (algebraicMode) {
-        while (true) {
+        playAlgebraic();
+    } else {
+        playVisual();
+    }
+  }
+
+  private: Board board;
+  PieceColor currentTurn = PieceColor::WHITE;
+
+  void printBoard(bool selected = false, int selectedCol = 0, int selectedRow = 0, int cursorCol = 0, int cursorRow = 0) const {
+    // Colours
+    std::string prefix = "\e[";
+    std::string suffix = "m";
+    std::string cReset = "\e[0m";
+    std::string bgWhite = "0;107";
+    std::string bgBlack = "0;100";
+    std::string bgGreen = "0;102";
+    std::string bgBlue = "0;104";
+    std::string bgRed = "0;101";
+    std::string fgWhite = ";1;97";
+    std::string fgBlack = ";1;90";
+    std::string fgGreen = ";1;92";
+    std::string fgBlue = ";1;94";
+    std::string fgRed = ";1;91";
+
+    int colorIte = 0;
+    std::string tempOut;
+
+    for (int row = 7; row >= 0; --row) {
+      std::cout << prefix + bgBlue + fgBlack + suffix << " " << row + 1 << " " << cReset;
+      for (int col = 0; col < 8; ++col) {
+        tempOut = "";
+        tempOut += prefix;
+        if (cursorCol == col && cursorRow == row) {
+          tempOut += bgBlue;
+        };
+        tempOut += suffix;
+        Piece piece = board.getPiece(row, col);
+        switch (piece.getType()) {
+        case PieceType::PAWN:
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " P " : " p ");
+          break;
+        case PieceType::KNIGHT:
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " N " : " n ");
+          break;
+        case PieceType::BISHOP:
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " B " : " b ");
+          break;
+        case PieceType::ROOK:
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " R " : " r ");
+          break;
+        case PieceType::QUEEN:
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " Q " : " q ");
+          break;
+        case PieceType::KING:
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " K " : " k ");
+          break;
+        default:
+          tempOut += " . ";
+          break;
+        };
+
+        // Readable text
+        //std::cout << prefix << ((colorIte % 2 == 0) ? bgWhite + fgBlack : bgBlack + fgWhite) << suffix << tempOut << cReset;
+        std::cout << tempOut << cReset;
+        colorIte++;
+      }
+      std::cout << std::endl;
+      colorIte++;
+    }
+    std::cout << prefix + bgBlue + fgBlack + suffix << "    a  b  c  d  e  f  g  h " << cReset << std::endl;
+    // std::cout << "cRow: " << cursorRow << std::endl;
+    // std::cout << "cCol: " << cursorCol << std::endl;
+    std::cout << "sRow: " << selectedRow << std::endl;
+    std::cout << "sCol: " << selectedCol << std::endl;
+    std::cout << "Selected: " << selected << std::endl;
+  }
+
+  bool parseMove(const std::string & move, int & fromRow, int & fromCol, int & toRow, int & toCol) const {
+    if (move.length() < 4) return false;
+
+    fromCol = move[0] - 'a';
+    fromRow = move[1] - '1';
+    toCol = move[2] - 'a';
+    toRow = move[3] - '1';
+
+    return (fromCol >= 0 && fromCol < 8 && fromRow >= 0 && fromRow < 8 &&
+      toCol >= 0 && toCol < 8 && toRow >= 0 && toRow < 8);
+  }
+
+  void switchTurn() {
+    currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
+    std::cout << (currentTurn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
+  }
+
+
+  void playAlgebraic() {
+    std::string move;
+    while (true) {
           std::cout << "Enter move (e.g., e2e4): ";
           std::cin >> move;
           if (move == "exit") break;
@@ -333,91 +430,15 @@ class ChessGame {
             std::cout << "Invalid input. Try again." << std::endl;
           }
         }
-    } else {
-        moveCursor();
-    }
   }
 
-  private: Board board;
-  PieceColor currentTurn = PieceColor::WHITE;
-
-  void printBoard() const {
-    // Colours
-    std::string prefix = "\e[";
-    std::string suffix = "m";
-    std::string cReset = "\e[0m";
-    std::string bgWhite = "0;107";
-    std::string bgBlack = "0;100";
-    std::string bgGreen = "0;102";
-    std::string bgBlue = "0;104";
-    std::string bgRed = "0;101";
-    std::string fgWhite = ";1;97";
-    std::string fgBlack = ";1;90";
-    std::string fgGreen = ";1;92";
-    std::string fgBlue = ";1;94";
-    std::string fgRed = ";1;91";
-
-    int colorIte = 0;
-    std::string tempOut;
-
-    for (int row = 7; row >= 0; --row) {
-      std::cout << prefix + bgBlue + fgBlack + suffix << " " << row + 1 << " " << cReset;
-      for (int col = 0; col < 8; ++col) {
-        Piece piece = board.getPiece(row, col);
-        switch (piece.getType()) {
-        case PieceType::PAWN:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? " P " : " p ");
-          break;
-        case PieceType::KNIGHT:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? " N " : " n ");
-          break;
-        case PieceType::BISHOP:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? " B " : " b ");
-          break;
-        case PieceType::ROOK:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? " R " : " r ");
-          break;
-        case PieceType::QUEEN:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? " Q " : " q ");
-          break;
-        case PieceType::KING:
-          tempOut = (piece.getColor() == PieceColor::WHITE ? " K " : " k ");
-          break;
-        default:
-          tempOut = " . ";
-          break;
-        };
-        // Readable text
-        std::cout << prefix << ((colorIte % 2 == 0) ? bgWhite + fgBlack : bgBlack + fgWhite) << suffix << tempOut << cReset;
-        colorIte++;
-      }
-      std::cout << std::endl;
-      colorIte++;
-    }
-    std::cout << prefix + bgBlue + fgBlack + suffix << "    a  b  c  d  e  f  g  h " << cReset << std::endl;
-  }
-
-  bool parseMove(const std::string & move, int & fromRow, int & fromCol, int & toRow, int & toCol) const {
-    if (move.length() < 4) return false;
-
-    fromCol = move[0] - 'a';
-    fromRow = move[1] - '1';
-    toCol = move[2] - 'a';
-    toRow = move[3] - '1';
-
-    return (fromCol >= 0 && fromCol < 8 && fromRow >= 0 && fromRow < 8 &&
-      toCol >= 0 && toCol < 8 && toRow >= 0 && toRow < 8);
-  }
-
-  void switchTurn() {
-    currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
-    std::cout << (currentTurn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
-  }
-
-  int cursorRow = 0;
-  int cursorCol = 0;
-
-  void moveCursor() {
+  void playVisual() {
+    std::string move;
+    int cursorRow = 0;
+    int cursorCol = 0;
+    int selectedRow = 0;
+    int selectedCol = 0;
+    bool selected = false;
     while (true) {
       char input = getch();
       switch (input) {
@@ -433,10 +454,21 @@ class ChessGame {
         case 'd':
           cursorCol = std::min(7, cursorCol + 1);
           break;
-        case '\n': // Enter key
-          return;
+        case ' ':
+          if (selected == true) {
+            if (cursorRow == selectedRow && cursorCol == selectedCol) {
+              selected = false;
+            }
+          } else {
+            selectedRow = cursorRow;
+            selectedCol = cursorCol;
+            selected = true;
+          }
+          break;
       }
-      std::cout << "Current cursor: " << cursorRow << ", " << cursorCol << std::endl;
+      std::cout << "\033[2J\033[1;1H";
+      printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow);
+      // std::cout << "Current cursor: " << cursorRow << ", " << cursorCol << std::endl;
     }
   }
 
