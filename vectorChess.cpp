@@ -342,6 +342,8 @@ class ChessGame {
     std::string bgGreen = "0;102";
     std::string bgBlue = "0;104";
     std::string bgRed = "0;101";
+    std::string bgPurple = "0;105";
+    std::string bgYellow = "0;103";
     std::string fgWhite = ";1;97";
     std::string fgBlack = ";1;90";
     std::string fgGreen = ";1;92";
@@ -351,15 +353,32 @@ class ChessGame {
     int colorIte = 0;
     std::string tempOut;
     std::vector validMoves = board.getValidMoves(selectedRow, selectedCol);
-
     for (int row = 7; row >= 0; --row) {
       std::cout << prefix + bgBlue + fgBlack + suffix << " " << row + 1 << " " << cReset;
       for (int col = 0; col < 8; ++col) {
         tempOut = "";
         tempOut += prefix;
         if (cursorCol == col && cursorRow == row) {
+          tempOut += bgPurple;
+        }
+        if (selected && selectedCol == col && selectedRow == row) {
           tempOut += bgBlue;
-        };
+        }
+        if (selected) {
+          for (int i = 0; i < validMoves.size(); i++) {
+            if (validMoves[i].first == row && validMoves[i].second == col) {
+              if (cursorCol == col && cursorRow == row) {
+                tempOut += bgYellow;
+              } else if (board.getPiece(row, col).getColor() == ((board.getPiece(selectedRow, selectedCol).getColor() == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE)) {
+                tempOut += bgRed;
+              } else {
+              tempOut += bgGreen;
+              }
+            }
+          }
+        }
+
+        
         tempOut += suffix;
         Piece piece = board.getPiece(row, col);
         switch (piece.getType()) {
@@ -400,6 +419,10 @@ class ChessGame {
     std::cout << "sRow: " << selectedRow << std::endl;
     std::cout << "sCol: " << selectedCol << std::endl;
     std::cout << "Selected: " << selected << std::endl;
+    // Print the valid moves pairs
+    /*for (auto move : validMoves) {
+      std::cout << prefix << bgGreen + fgBlack + suffix << " " << move.first << " " << move.second << cReset << std::endl;
+    }*/
     
   }
 
@@ -477,7 +500,21 @@ class ChessGame {
           if (selected == true) {
             if (cursorRow == selectedRow && cursorCol == selectedCol) {
               selected = false;
-            }
+            } else {
+              if (board.isValidMove(selectedRow, selectedCol, cursorRow, cursorCol, currentTurn)) {
+                board.movePiece(selectedRow, selectedCol, cursorRow, cursorCol, currentTurn);
+                selected = false;
+                std::cout << "\033[2J\033[1;1H";
+                printBoard();
+                switchTurn();
+                if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                  std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
+                  break;
+                } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                  std::cout << (currentTurn == PieceColor::WHITE ? "Black" : "White") << " is in check." << std::endl;
+                }
+              };
+            };
           } else {
             selectedRow = cursorRow;
             selectedCol = cursorCol;
