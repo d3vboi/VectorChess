@@ -4,13 +4,16 @@ Author: github.com/d3vboi
 Start Date: 22/06/2024
 Description:
     A c++ chess game, written for the hack club arcade.
-Version: 0.2.1
+Version: 0.2.2
 */
 
 #include <iostream>
 #include <vector>
 #include <string>
 #include <cctype>
+#include <termios.h>
+#include <unistd.h>
+#include <stdexcept>
 
 enum class PieceType {
   EMPTY,
@@ -299,35 +302,39 @@ class ChessGame {
     board.initialize();
   }
 
-  void play() {
+  void play(bool algebraicMode) {
     std::cout << "\033[2J\033[1;1H";
     printBoard();
     std::string move;
-    while (true) {
-      std::cout << "Enter move (e.g., e2e4): ";
-      std::cin >> move;
-      if (move == "exit") break;
+    if (algebraicMode) {
+        while (true) {
+          std::cout << "Enter move (e.g., e2e4): ";
+          std::cin >> move;
+          if (move == "exit") break;
 
-      int fromRow, fromCol, toRow, toCol;
-      if (parseMove(move, fromRow, fromCol, toRow, toCol)) {
-        if (board.movePiece(fromRow, fromCol, toRow, toCol, currentTurn)) {
-          std::cout << "\033[2J\033[1;1H";
-          printBoard();
+          int fromRow, fromCol, toRow, toCol;
+          if (parseMove(move, fromRow, fromCol, toRow, toCol)) {
+            if (board.movePiece(fromRow, fromCol, toRow, toCol, currentTurn)) {
+              std::cout << "\033[2J\033[1;1H";
+              printBoard();
 
-          if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
-            std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
-            break;
-          } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
-            std::cout << (currentTurn == PieceColor::WHITE ? "Black" : "White") << " is in check." << std::endl;
+              if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
+                break;
+              } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                std::cout << (currentTurn == PieceColor::WHITE ? "Black" : "White") << " is in check." << std::endl;
+              }
+
+              switchTurn();
+            } else {
+              std::cout << "Invalid move. Try again." << std::endl;
+            }
+          } else {
+            std::cout << "Invalid input. Try again." << std::endl;
           }
-
-          switchTurn();
-        } else {
-          std::cout << "Invalid move. Try again." << std::endl;
         }
-      } else {
-        std::cout << "Invalid input. Try again." << std::endl;
-      }
+    } else {
+        moveCursor();
     }
   }
 
@@ -335,6 +342,7 @@ class ChessGame {
   PieceColor currentTurn = PieceColor::WHITE;
 
   void printBoard() const {
+    // Colours
     std::string prefix = "\e[";
     std::string suffix = "m";
     std::string cReset = "\e[0m";
@@ -379,7 +387,7 @@ class ChessGame {
           tempOut = " . ";
           break;
         };
-
+        // Readable text
         std::cout << prefix << ((colorIte % 2 == 0) ? bgWhite + fgBlack : bgBlack + fgWhite) << suffix << tempOut << cReset;
         colorIte++;
       }
@@ -405,12 +413,63 @@ class ChessGame {
     currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
     std::cout << (currentTurn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
   }
+
+  int cursorRow = 0;
+  int cursorCol = 0;
+
+  void moveCursor() {
+    while (true) {
+      char input = getch();
+      switch (input) {
+        case 'w':
+          cursorRow = std::min(7, cursorRow + 1);
+          break;
+        case 'a':
+          cursorCol = std::max(0, cursorCol - 1);
+          break;
+        case 's':
+          cursorRow = std::max(0, cursorRow - 1);
+          break;
+        case 'd':
+          cursorCol = std::min(7, cursorCol + 1);
+          break;
+        case '\n': // Enter key
+          return;
+      }
+      std::cout << "Current cursor: " << cursorRow << ", " << cursorCol << std::endl;
+    }
+  }
+
+  char getch() {
+    char buf = 0;
+    struct termios old = { 0 };
+    if (tcgetattr(0, & old) < 0)
+      perror("tcsetattr()");
+    old.c_lflag &= ~ICANON;
+    old.c_lflag &= ~ECHO;
+    old.c_cc[VMIN] = 1;
+    old.c_cc[VTIME] = 0;
+    if (tcsetattr(0, TCSANOW, & old) < 0)
+      perror("tcsetattr ICANON");
+    if (read(0, & buf, 1) < 0)
+      perror("read()");
+    old.c_lflag |= ICANON;
+    old.c_lflag |= ECHO;
+    if (tcsetattr(0, TCSADRAIN, & old) < 0)
+      perror("tcsetattr ~ICANON");
+    return buf;
+  }
 };
 
-int main() {
+int main(int argc, char *argv[]) {
+  bool algebraicMode = false;
+
+  if (argc > 1 && std::string(argv[1]) == "--algebraic") {
+    algebraicMode = true;
+  }
   try {
     ChessGame game;
-    game.play();
+    game.play(algebraicMode);
   } catch (const std::exception & e) {
     std::cerr << "Exception: " << e.what() << std::endl;
   } catch (...) {
