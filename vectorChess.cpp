@@ -4,7 +4,7 @@ Author: github.com/d3vboi
 Start Date: 22/06/2024
 Description:
     A c++ chess game, written for the hack club arcade.
-Version: 0.2.2
+Version: 0.2.3
 */
 
 #include <iostream>
@@ -332,7 +332,21 @@ class ChessGame {
   private: Board board;
   PieceColor currentTurn = PieceColor::WHITE;
 
-  void printBoard(bool selected = false, int selectedCol = 0, int selectedRow = 0, int cursorCol = 0, int cursorRow = 0) const {
+  /**
+   * Prints the current state of the chess board to the console.
+   *
+   * @param selected Whether a piece is currently selected.
+   * @param selectedCol The column index of the currently selected piece.
+   * @param selectedRow The row index of the currently selected piece.
+   * @param cursorCol The column index of the current cursor position.
+   * @param cursorRow The row index of the current cursor position.
+   */
+  void printBoard(bool selected = false, int selectedCol = 0, int selectedRow = 0, int cursorCol = 0, int cursorRow = 0, PieceColor turn = PieceColor::WHITE) const
+  {
+    // Clear the screen
+
+    std::cout << "\033[2J\033[1;1H";
+
     // Colours
     std::string prefix = "\e[";
     std::string suffix = "m";
@@ -353,60 +367,88 @@ class ChessGame {
     int colorIte = 0;
     std::string tempOut;
     std::vector validMoves = board.getValidMoves(selectedRow, selectedCol);
-    for (int row = 7; row >= 0; --row) {
+    for (int row = 7; row >= 0; --row)
+    {
       std::cout << prefix + bgBlue + fgBlack + suffix << " " << row + 1 << " " << cReset;
-      for (int col = 0; col < 8; ++col) {
+      for (int col = 0; col < 8; ++col)
+      {
         tempOut = "";
         tempOut += prefix;
-        if (cursorCol == col && cursorRow == row) {
+        tempOut += ((colorIte % 2 == 0) ? bgWhite + fgBlack : bgBlack + fgWhite);
+        if (cursorCol == col && cursorRow == row)
+        {
           tempOut += bgPurple;
         }
-        if (selected && selectedCol == col && selectedRow == row) {
+        if (selected && selectedCol == col && selectedRow == row)
+        {
           tempOut += bgBlue;
         }
-        if (selected) {
-          for (int i = 0; i < validMoves.size(); i++) {
-            if (validMoves[i].first == row && validMoves[i].second == col) {
-              if (cursorCol == col && cursorRow == row) {
+        if (selected)
+        {
+          for (int i = 0; i < validMoves.size(); i++)
+          {
+            if (validMoves[i].first == row && validMoves[i].second == col)
+            {
+              if (cursorCol == col && cursorRow == row)
+              {
                 tempOut += bgYellow;
-              } else if (board.getPiece(row, col).getColor() == ((board.getPiece(selectedRow, selectedCol).getColor() == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE)) {
+              }
+              else if (board.getPiece(row, col).getColor() == ((board.getPiece(selectedRow, selectedCol).getColor() == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE))
+              {
                 tempOut += bgRed;
-              } else {
-              tempOut += bgGreen;
+              }
+              else
+              {
+                tempOut += bgGreen;
               }
             }
           }
         }
 
-        
         tempOut += suffix;
         Piece piece = board.getPiece(row, col);
+        /*
+        White:
+        Pawn      ♟
+        Knight    ♞
+        Bishop    ♝
+        Rook      ♜
+        King      ♚
+        Queen     ♛
+
+        Black:
+        Pawn      ♙
+        Knight    ♘
+        Bishop    ♗
+        Rook      ♖
+        King      ♔
+        Queen     ♕
+        */
         switch (piece.getType()) {
         case PieceType::PAWN:
-          tempOut += (piece.getColor() == PieceColor::WHITE ? " P " : " p ");
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " ♟ " : " ♙ ");
           break;
         case PieceType::KNIGHT:
-          tempOut += (piece.getColor() == PieceColor::WHITE ? " N " : " n ");
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " ♞ " : " ♘ ");
           break;
         case PieceType::BISHOP:
-          tempOut += (piece.getColor() == PieceColor::WHITE ? " B " : " b ");
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " ♝ " : " ♗ ");
           break;
         case PieceType::ROOK:
-          tempOut += (piece.getColor() == PieceColor::WHITE ? " R " : " r ");
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " ♜ " : " ♖ ");
           break;
         case PieceType::QUEEN:
-          tempOut += (piece.getColor() == PieceColor::WHITE ? " Q " : " q ");
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " ♛ " : " ♕ ");
           break;
         case PieceType::KING:
-          tempOut += (piece.getColor() == PieceColor::WHITE ? " K " : " k ");
+          tempOut += (piece.getColor() == PieceColor::WHITE ? " ♚ " : " ♔ ");
           break;
         default:
-          tempOut += " . ";
+          tempOut += "   ";
           break;
         };
 
-        // Readable text
-        //std::cout << prefix << ((colorIte % 2 == 0) ? bgWhite + fgBlack : bgBlack + fgWhite) << suffix << tempOut << cReset;
+        // Finally print the output
         std::cout << tempOut << cReset;
         colorIte++;
       }
@@ -414,16 +456,8 @@ class ChessGame {
       colorIte++;
     }
     std::cout << prefix + bgBlue + fgBlack + suffix << "    a  b  c  d  e  f  g  h " << cReset << std::endl;
-    // std::cout << "cRow: " << cursorRow << std::endl;
-    // std::cout << "cCol: " << cursorCol << std::endl;
-    std::cout << "sRow: " << selectedRow << std::endl;
-    std::cout << "sCol: " << selectedCol << std::endl;
-    std::cout << "Selected: " << selected << std::endl;
-    // Print the valid moves pairs
-    /*for (auto move : validMoves) {
-      std::cout << prefix << bgGreen + fgBlack + suffix << " " << move.first << " " << move.second << cReset << std::endl;
-    }*/
-    
+
+    std::cout << (turn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
   }
 
   bool parseMove(const std::string & move, int & fromRow, int & fromCol, int & toRow, int & toCol) const {
@@ -440,7 +474,6 @@ class ChessGame {
 
   void switchTurn() {
     currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
-    std::cout << (currentTurn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
   }
 
 
@@ -486,32 +519,41 @@ class ChessGame {
       switch (input) {
         case 'w':
           cursorRow = std::min(7, cursorRow + 1);
+          printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
           break;
         case 'a':
           cursorCol = std::max(0, cursorCol - 1);
+          printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
           break;
         case 's':
           cursorRow = std::max(0, cursorRow - 1);
+          printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
           break;
         case 'd':
           cursorCol = std::min(7, cursorCol + 1);
+          printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
           break;
         case ' ':
           if (selected == true) {
             if (cursorRow == selectedRow && cursorCol == selectedCol) {
               selected = false;
+              printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
             } else {
               if (board.isValidMove(selectedRow, selectedCol, cursorRow, cursorCol, currentTurn)) {
                 board.movePiece(selectedRow, selectedCol, cursorRow, cursorCol, currentTurn);
                 selected = false;
-                std::cout << "\033[2J\033[1;1H";
-                printBoard();
-                switchTurn();
                 if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
+                  printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
                   std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
                   break;
                 } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
-                  std::cout << (currentTurn == PieceColor::WHITE ? "Black" : "White") << " is in check." << std::endl;
+                  switchTurn();
+                  printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
+                  std::cout << (currentTurn == PieceColor::BLACK ? "Black" : "White") << " is in check." << std::endl;
+                
+                } else {
+                  switchTurn();
+                  printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
                 }
               };
             };
@@ -519,11 +561,10 @@ class ChessGame {
             selectedRow = cursorRow;
             selectedCol = cursorCol;
             selected = true;
+            printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
           }
           break;
       }
-      std::cout << "\033[2J\033[1;1H";
-      printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow);
       // std::cout << "Current cursor: " << cursorRow << ", " << cursorCol << std::endl;
     }
   }
@@ -549,10 +590,19 @@ class ChessGame {
   }
 };
 
+void helpMenu() {
+  std::cout << "Usage: vectorChess [--algebraic] " << std::endl;
+  std::cout << "  --help: Display this menu" << std::endl;
+  std::cout << "  --algebraic: Use algebraic notation for moves" << std::endl;
+}
+
 int main(int argc, char *argv[]) {
   bool algebraicMode = false;
+  if (argc > 1 && std::string(argv[1]) == "--help") {
+    helpMenu();
+    return 0;
 
-  if (argc > 1 && std::string(argv[1]) == "--algebraic") {
+  } else if (argc > 1 && std::string(argv[1]) == "--algebraic") {
     algebraicMode = true;
   }
   try {
