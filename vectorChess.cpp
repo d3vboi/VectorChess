@@ -237,17 +237,22 @@ class Board {
     return false;
   }
 
-  std::string* findValidMoves(Piece piece, PieceColor color, int row, int col) {
-    std::string* moves = new std::string();
-    for (int toRow = 0; toRow < 8; ++toRow) {
-      for (int toCol = 0; toCol < 8; ++toCol) {
-        if (isValidMove(row, col, toRow, toCol, color)){
-          moves->push_back(toRow + 1 + (toCol + 1) * 10);
+  std::vector<std::pair<int, int>> getValidMoves(int row, int col) const
+  {
+      std::vector<std::pair<int, int>> validMoves;
+      Piece piece = board[row][col];
+      PieceColor color = piece.getColor();
+  
+      for (int toRow = 0; toRow < 8; ++toRow) {
+        for (int toCol = 0; toCol < 8; ++toCol) {
+          if (isValidMove(row, col, toRow, toCol, color)) {
+            validMoves.emplace_back(toRow, toCol);
+          }
         }
       }
+  
+      return validMoves;
     }
-    return moves;
-  }
 
   void findKing(PieceColor color, int & kingRow, int & kingCol) const {
     for (int row = 0; row < 8; ++row) {
@@ -345,7 +350,7 @@ class ChessGame {
 
     int colorIte = 0;
     std::string tempOut;
-    //std::string* validMoves = board.findValidMoves();
+    std::vector validMoves = board.getValidMoves(selectedRow, selectedCol);
 
     for (int row = 7; row >= 0; --row) {
       std::cout << prefix + bgBlue + fgBlack + suffix << " " << row + 1 << " " << cReset;
