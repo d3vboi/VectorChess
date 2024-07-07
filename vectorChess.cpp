@@ -14,6 +14,7 @@ Version: 0.2.3
 #include <termios.h>
 #include <unistd.h>
 #include <stdexcept>
+#include "knowledge.hpp"
 
 enum class PieceType {
   EMPTY,
@@ -308,6 +309,30 @@ class Board {
     return true; // No valid moves, means it's a checkmate
   }
 
+  std::pair<int, int> calculateTeamValues() const {
+    int whiteValue = 0;
+    int blackValue = 0;
+
+    for (int row = 0; row < 8; ++row) {
+      for (int col = 0; col < 8; ++col) {
+        Piece piece = board[row][col];
+        PieceType type = piece.getType();
+        PieceColor color = piece.getColor();
+
+        if (type != PieceType::EMPTY) {
+          int index = static_cast<int>(type) + (color == PieceColor::WHITE ? 6 : 0);
+          if (color == PieceColor::WHITE) {
+            whiteValue += piece_val[index];
+          } else {
+            blackValue += piece_val[index];
+          }
+        }
+      }
+    }
+
+    return {whiteValue, blackValue};
+  }
+
   private: std::vector < std::vector < Piece >> board {
     8,
     std::vector < Piece > (8)
@@ -322,6 +347,7 @@ class ChessGame {
   void play(bool algebraicMode) {
     std::cout << "\033[2J\033[1;1H";
     printBoard();
+    displayTeamValues();
     if (algebraicMode) {
         playAlgebraic();
     } else {
@@ -476,6 +502,11 @@ class ChessGame {
     currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
   }
 
+  void displayTeamValues() const {
+    auto [whiteValue, blackValue] = board.calculateTeamValues();
+    std::cout << "White team value: " << whiteValue << std::endl;
+    std::cout << "Black team value: " << -blackValue << std::endl;
+  }
 
   void playAlgebraic() {
     std::string move;
@@ -489,6 +520,7 @@ class ChessGame {
             if (board.movePiece(fromRow, fromCol, toRow, toCol, currentTurn)) {
               std::cout << "\033[2J\033[1;1H";
               printBoard();
+              displayTeamValues();
 
               if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
                 std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
@@ -544,16 +576,19 @@ class ChessGame {
                 selected = false;
                 if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
                   printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
+                  displayTeamValues();
                   std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
                   break;
                 } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
                   switchTurn();
                   printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
+                  displayTeamValues();
                   std::cout << (currentTurn == PieceColor::BLACK ? "Black" : "White") << " is in check." << std::endl;
                 
                 } else {
                   switchTurn();
                   printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
+                  displayTeamValues();
                 }
               };
             };
