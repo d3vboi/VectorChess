@@ -1,1 +1,1 @@
-g++ ./vectorChess.cpp -o vectorChess
+g++ -o vectorChess vectorChess.cpp search.cpp -std=c++11
