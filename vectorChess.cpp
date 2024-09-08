@@ -4,7 +4,7 @@ Author: github.com/d3vboi
 Start Date: 22/06/2024
 Description:
     A c++ chess game, written for the hack club arcade.
-Version: 0.2.3
+Version: 0.2.4
 */
 
 #include <iostream>
@@ -333,6 +333,87 @@ class Board {
     return {whiteValue, blackValue};
   }
 
+  int totalValidMoves(PieceColor color) {
+    // Get total amount of valid moves for the specified colour
+    int totalMoves = 0;
+    for (int row = 0; row < 8; ++row) {
+      for (int col = 0; col < 8; ++col) {
+        Piece piece = board[row][col];
+        if (piece.getColor() == color) {
+          std::vector < std::pair < int, int >> moves = getValidMoves(row, col);
+          totalMoves += moves.size();
+        }
+      }
+    }
+    return totalMoves;
+  }
+
+  int totalPiecesOfType(PieceType type, PieceColor color) {
+    // Get amount of pieces of specified type, of the specified colour
+    int count = 0;
+    for (int row = 0; row < 8; ++row) {
+      for (int col = 0; col < 8; ++col) {
+        Piece piece = board[row][col];
+        if (piece.getType() == type && piece.getColor() == color) {
+          ++count;
+        }
+      }
+    }
+    return count;
+  }
+
+  /*
+  NegaMax algorithm
+  https://www.chessprogramming.org/Negamax
+
+  materialScore = kingWt  * (wK-bK)
+              + queenWt * (wQ-bQ)
+              + rookWt  * (wR-bR)
+              + knightWt* (wN-bN)
+              + bishopWt* (wB-bB)
+              + pawnWt  * (wP-bP)
+
+  mobilityScore = mobilityWt * (wMobility-bMobility)
+
+  Simple NegaMax implementation
+
+  Eval  = (materialScore + mobilityScore) * who2Move
+  */
+
+  int calculateTeamValue(PieceColor color) {
+    int team = (color == PieceColor::WHITE ? 1 : 0);
+    int mobility = totalValidMoves(color);
+    
+    int pieces = totalPiecesOfType(PieceType::PAWN, color) +
+    totalPiecesOfType(PieceType::KNIGHT, color) +
+    totalPiecesOfType(PieceType::BISHOP, color) +
+    totalPiecesOfType(PieceType::ROOK, color) +
+    totalPiecesOfType(PieceType::QUEEN, color) +
+    totalPiecesOfType(PieceType::KING, color);
+    int king = totalPiecesOfType(PieceType::KING, color);
+    int materialScore = 0;
+    if (color == PieceColor::WHITE) {
+      materialScore = 90
+      + 5 * totalPiecesOfType(PieceType::PAWN, color)
+      + 3 * totalPiecesOfType(PieceType::KNIGHT, color)
+      + 3 * totalPiecesOfType(PieceType::BISHOP, color)
+      + 5 * totalPiecesOfType(PieceType::ROOK, color)
+      + 9 * totalPiecesOfType(PieceType::QUEEN, color)
+      + 1000
+      - 1000 * totalPiecesOfType(PieceType::KING, color);
+    } else {
+      materialScore = 90
+      + 5 * totalPiecesOfType(PieceType::PAWN, color)
+      + 3 * totalPiecesOfType(PieceType::KNIGHT, color)
+      + 3 * totalPiecesOfType(PieceType::BISHOP, color)
+      + 5 * totalPiecesOfType(PieceType::ROOK, color)
+      + 9 * totalPiecesOfType(PieceType::QUEEN, color)
+      + 1000
+      - 1000 * totalPiecesOfType(PieceType::KING, color);
+      return materialScore + mobility * 1000;
+      }
+  }
+
   private: std::vector < std::vector < Piece >> board {
     8,
     std::vector < Piece > (8)
@@ -347,7 +428,6 @@ class ChessGame {
   void play(bool algebraicMode) {
     std::cout << "\033[2J\033[1;1H";
     printBoard();
-    displayTeamValues();
     if (algebraicMode) {
         playAlgebraic();
     } else {
@@ -484,6 +564,9 @@ class ChessGame {
     std::cout << prefix + bgBlue + fgBlack + suffix << "    a  b  c  d  e  f  g  h " << cReset << std::endl;
 
     std::cout << (turn == PieceColor::WHITE ? "White" : "Black") << "'s turn." << std::endl;
+
+    std::cout << "White's score: " << board.calculateTeamValue(PieceColor::WHITE) << "\n";
+    std::cout << "Black's score: " << board.calculateTeamValue(PieceColor::BLACK) << "\n";
   }
 
   bool parseMove(const std::string & move, int & fromRow, int & fromCol, int & toRow, int & toCol) const {
@@ -502,12 +585,6 @@ class ChessGame {
     currentTurn = (currentTurn == PieceColor::WHITE) ? PieceColor::BLACK : PieceColor::WHITE;
   }
 
-  void displayTeamValues() const {
-    auto [whiteValue, blackValue] = board.calculateTeamValues();
-    std::cout << "White team value: " << whiteValue << std::endl;
-    std::cout << "Black team value: " << -blackValue << std::endl;
-  }
-
   void playAlgebraic() {
     std::string move;
     while (true) {
@@ -520,7 +597,6 @@ class ChessGame {
             if (board.movePiece(fromRow, fromCol, toRow, toCol, currentTurn)) {
               std::cout << "\033[2J\033[1;1H";
               printBoard();
-              displayTeamValues();
 
               if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
                 std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
@@ -539,6 +615,21 @@ class ChessGame {
         }
   }
 
+  bool isMovable(int col, int row) {
+    bool selectable = true;
+
+    bool isEmpty = (board.getPiece(row, col).getType() == PieceType::EMPTY ? true : false);
+    bool isOpponentTurn = (board.getPiece(row, col).getColor() != currentTurn ? true : false);
+    if (isEmpty || isOpponentTurn) {
+      selectable = false;
+    }
+    return selectable;
+  }
+
+  void exitPremature() {
+    std::cout << "Stopping game.\n";
+  }
+
   void playVisual() {
     std::string move;
     int cursorRow = 0;
@@ -549,6 +640,9 @@ class ChessGame {
     while (true) {
       char input = getch();
       switch (input) {
+        case 'q':
+          exitPremature();
+          return;
         case 'w':
           cursorRow = std::min(7, cursorRow + 1);
           printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
@@ -565,30 +659,31 @@ class ChessGame {
           cursorCol = std::min(7, cursorCol + 1);
           printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
           break;
-        case ' ':
+        case ' ': // Space (Select)
+          if (!isMovable(cursorCol, cursorRow)) {
+              break;
+            }
+
           if (selected == true) {
             if (cursorRow == selectedRow && cursorCol == selectedCol) {
               selected = false;
               printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
-            } else {
+            } else { 
               if (board.isValidMove(selectedRow, selectedCol, cursorRow, cursorCol, currentTurn)) {
                 board.movePiece(selectedRow, selectedCol, cursorRow, cursorCol, currentTurn);
                 selected = false;
                 if (board.isCheckmate(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
                   printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
-                  displayTeamValues();
                   std::cout << "Checkmate! " << (currentTurn == PieceColor::WHITE ? "White" : "Black") << " wins!" << std::endl;
                   break;
                 } else if (board.isKingInCheck(currentTurn == PieceColor::WHITE ? PieceColor::BLACK : PieceColor::WHITE)) {
                   switchTurn();
                   printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
-                  displayTeamValues();
                   std::cout << (currentTurn == PieceColor::BLACK ? "Black" : "White") << " is in check." << std::endl;
                 
                 } else {
                   switchTurn();
                   printBoard(selected, selectedCol, selectedRow, cursorCol, cursorRow, currentTurn);
-                  displayTeamValues();
                 }
               };
             };

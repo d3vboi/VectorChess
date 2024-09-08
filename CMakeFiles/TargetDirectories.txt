@@ -1,0 +1,3 @@
+/home/d3vboi/programming/cpp/vectorChess/CMakeFiles/vectorChess.dir
+/home/d3vboi/programming/cpp/vectorChess/CMakeFiles/edit_cache.dir
+/home/d3vboi/programming/cpp/vectorChess/CMakeFiles/rebuild_cache.dir
